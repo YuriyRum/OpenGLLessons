@@ -155,6 +155,46 @@ int main()
 		return obj;
 	};
 
+	objects(*pTexture)() = []() -> objects
+	{
+		GLfloat vertices[] =
+		{
+			/// qurd            // texture coordinates  
+			-0.5f,  0.5f, 0.0,  0.0f, 1.0f,
+			0.5f, 0.5f, 0.0,    1.0f, 1.0f,
+			0.5f,-0.5f, 0.0,    1.0f, 0.0f
+		    -0.5f,  -0.5f, 0.0, 0.0f, 0.0f,
+		};
+
+		GLuint indeces[] =
+		{
+			0,1,2,
+			0,2,3
+		};
+
+		GLuint vbo;
+		GLuint vao;
+		GLuint ibo;
+
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_DYNAMIC_DRAW
+
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+		glEnableVertexAttribArray(0);
+
+		glGenBuffers(1, &ibo);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indeces), indeces, GL_STATIC_DRAW);
+
+		objects obj{ vbo, ibo, vao };
+
+		return obj;
+	};
+
 	try 
 	{
 		App::Init();

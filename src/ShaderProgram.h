@@ -23,13 +23,14 @@ public:
 	ShaderProgram();
 	~ShaderProgram();
 
-	bool Run();
+	bool CreateProgram();
 	void DeleteShaders();
 	void DeleteProgram();
 
 	void SetUniform(const GLchar* name, const glm::vec2& vec);
 	void SetUniform(const GLchar* name, const glm::vec3& vec);
 	void SetUniform(const GLchar* name, const glm::vec4& vec);
+	void Use();
 
 	GLuint GetProgram() const;
 	GLint GetUniformLocation(const GLchar* name);

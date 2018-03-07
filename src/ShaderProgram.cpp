@@ -13,7 +13,7 @@ ShaderProgram::~ShaderProgram()
 	DeleteProgram();
 }
 
-bool ShaderProgram::Run()
+bool ShaderProgram::CreateProgram()
 {
 	if (!LoadShaders())
 	{
@@ -83,18 +83,25 @@ GLint ShaderProgram::GetUniformLocation(const GLchar* name)
 void ShaderProgram::SetUniform(const GLchar* name, const glm::vec2& vec)
 {
 	GLint uniformLocation = GetUniformLocation(name);
-
+	glUniform2f(uniformLocation, vec.x, vec.y);
 };
 
 void ShaderProgram::SetUniform(const GLchar* name, const glm::vec3& vec)
 {
-	
+	GLint uniformLocation = GetUniformLocation(name);
+	glUniform3f(uniformLocation, vec.x, vec.y,vec.z);
 };
 
 void ShaderProgram::SetUniform(const GLchar* name, const glm::vec4& vec)
 {
-
+	GLint uniformLocation = GetUniformLocation(name);
+	glUniform4f(uniformLocation, vec.x, vec.y, vec.z, vec.w);
 };
+
+void ShaderProgram::Use()
+{
+	glUseProgram(m_Program);
+}
 
 bool ShaderProgram::LoadShaders()
 {

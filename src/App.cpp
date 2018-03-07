@@ -60,16 +60,14 @@ void App::Run(objects(*run)())
 {
 	ShaderProgram shaderProgram;
 
-	if (!shaderProgram.Run())
+	if (!shaderProgram.CreateProgram())
 	{
 		return;
 	};
 
 	shaderProgram.DeleteShaders();
 
-	objects obj = run();//static buffer draw
-	
-	GLuint program = shaderProgram.GetProgram();
+	objects obj = run();//static buffer draw		
 
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
@@ -77,7 +75,17 @@ void App::Run(objects(*run)())
 		glfwPollEvents();		
 		glClear(GL_COLOR_BUFFER_BIT);		
 
-		glUseProgram(program);
+		shaderProgram.Use();	
+
+		GLfloat time = glfwGetTime();		
+		
+		glm::vec2 positionOffset;
+		positionOffset.x = std::sin(time) / 2;
+		positionOffset.y = std::cos(time) / 2;
+		shaderProgram.SetUniform("positionOffset", positionOffset);
+
+		shaderProgram.SetUniform("color", glm::vec4(0.0f, 0.5f, std::sin(time) / 2 + 0.5f, 1.0f));
+
 		glBindVertexArray(obj.vao);
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
