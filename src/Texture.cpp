@@ -1,9 +1,9 @@
+#define STB_IMAGE_IMPLEMENTATION
+
 #include "Texture.h"
+
 #include "stb/stb_image.h"
 #include <iostream>
-
-#define X_DIRECTION
-#define Y_DIRECTION
 
 Texture::Texture() : m_Texture(0)
 {
@@ -25,14 +25,17 @@ bool Texture::LoadTexture(const std::string& name, bool generateMipMaps)
 		std::cerr << "Error loading texture " << name << std::endl;
 		return false;
 	}		
+	
+	/// invert image
+	InvertImage(imageData, width, height);
 
 	glGenTextures(1, &m_Texture);
-	glBindTexture(GL_TEXTURE_2D, m_Texture);
+	glBindTexture(GL_TEXTURE_2D, m_Texture);	
 
-	glTextureParameteri(GL_TEXTURE_2D, X_DIRECTION GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTextureParameteri(GL_TEXTURE_2D, Y_DIRECTION GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTextureParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
 
@@ -48,6 +51,34 @@ bool Texture::LoadTexture(const std::string& name, bool generateMipMaps)
 }
 
 void Texture::Bind(GLuint unitText)
-{
+{	
+	glActiveTexture(GL_TEXTURE0 + unitText);
 	glBindTexture(GL_TEXTURE_2D, m_Texture);
+}
+
+void Texture::InvertImage(unsigned char* source, const int width, const int height)
+{
+	unsigned char* top = nullptr;
+	unsigned char* bottom = nullptr;
+	unsigned char tmp = 0;	
+	int widthInBytes = width * 4;
+
+	int halfHeight = height / 2;
+
+	for (int row = 0; row < halfHeight; row++)
+	{
+		top = source + row * widthInBytes;
+		bottom = source + ( height - row - 1 ) * widthInBytes;
+
+		for (int col = 0; col < widthInBytes; col++)
+		{
+			tmp = *top;
+			*top = *bottom;
+			*bottom = tmp;
+
+			top++;
+			bottom++;
+		}
+	}
+
 }

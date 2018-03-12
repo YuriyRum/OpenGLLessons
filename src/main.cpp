@@ -159,10 +159,10 @@ int main()
 	{
 		GLfloat vertices[] =
 		{
-			/// qurd            // texture coordinates  
+			/// quard            // texture coordinates  
 			-0.5f,  0.5f, 0.0,  0.0f, 1.0f,
 			0.5f, 0.5f, 0.0,    1.0f, 1.0f,
-			0.5f,-0.5f, 0.0,    1.0f, 0.0f
+			0.5f,-0.5f, 0.0,    1.0f, 0.0f,
 		    -0.5f,  -0.5f, 0.0, 0.0f, 0.0f,
 		};
 
@@ -183,8 +183,11 @@ int main()
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)(0));
 		glEnableVertexAttribArray(0);
+		
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
 
 		glGenBuffers(1, &ibo);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
@@ -199,7 +202,7 @@ int main()
 	{
 		App::Init();
 		App::CreateWindow(WIDTH, HEIGHT, pAppTitle, pCallback);
-		App::Run(pSquad);
+		App::Run(pTexture);
 		App::Utilize();
 	}	
 	catch (std::string e)

@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include "ShaderProgram.h"
+#include "Texture.h"
 
 bool App::bFullScreen = false;
 GLFWwindow* App::m_pWindow = nullptr;
@@ -65,9 +66,22 @@ void App::Run(objects(*run)())
 		return;
 	};
 
-	shaderProgram.DeleteShaders();
+	shaderProgram.DeleteShaders();	
+
+	Texture texture;
+	if (!texture.LoadTexture(".\\textures\\airplane.PNG", true))
+	{
+		std::cerr << "Error while reading texture" << std::endl;
+	};
+	
+	Texture texture2;
+	if(!texture2.LoadTexture(".\\textures\\crate.jpg", true))
+	{
+		std::cerr << "Error while reading texture" << std::endl;
+	};
 
 	objects obj = run();//static buffer draw		
+
 
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
@@ -75,16 +89,14 @@ void App::Run(objects(*run)())
 		glfwPollEvents();		
 		glClear(GL_COLOR_BUFFER_BIT);		
 
+		texture.Bind(0);		
+		texture2.Bind(1);
+		
 		shaderProgram.Use();	
 
-		GLfloat time = glfwGetTime();		
+		glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture"), 0);
+		glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture2"), 1);
 		
-		glm::vec2 positionOffset;
-		positionOffset.x = std::sin(time) / 2;
-		positionOffset.y = std::cos(time) / 2;
-		shaderProgram.SetUniform("positionOffset", positionOffset);
-
-		shaderProgram.SetUniform("color", glm::vec4(0.0f, 0.5f, std::sin(time) / 2 + 0.5f, 1.0f));
 
 		glBindVertexArray(obj.vao);
 		//glDrawArrays(GL_TRIANGLES, 0, 6);
