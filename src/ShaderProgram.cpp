@@ -1,6 +1,7 @@
 #include "ShaderProgram.h"
 #include "Loader.h"
 #include "iostream"
+#include "glm/gtc/type_ptr.hpp"
 
 ShaderProgram::ShaderProgram() : m_VertexShader(glCreateShader(GL_VERTEX_SHADER)), m_FragmentShader(glCreateShader(GL_FRAGMENT_SHADER)), m_Program(glCreateProgram())
 {
@@ -98,6 +99,12 @@ void ShaderProgram::SetUniform(const GLchar* name, const glm::vec4& vec)
 	glUniform4f(uniformLocation, vec.x, vec.y, vec.z, vec.w);
 };
 
+void ShaderProgram::SetUniform(const GLchar* name, const glm::mat4& mat)
+{
+	GLint uniformLocation = GetUniformLocation(name);
+	glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(mat));
+};
+
 void ShaderProgram::Use()
 {
 	glUseProgram(m_Program);
@@ -106,8 +113,8 @@ void ShaderProgram::Use()
 bool ShaderProgram::LoadShaders()
 {
 	bool returnStatus = true;
-	returnStatus &= LoadSpecificShader(".\\bin\\shader.vert", ShaderType::VERTEX, m_VertexShader);
-	returnStatus &= LoadSpecificShader(".\\bin\\shader.frag", ShaderType::FRAGMENT, m_FragmentShader);
+	returnStatus &= LoadSpecificShader(".\\src\\shader.vert", ShaderType::VERTEX, m_VertexShader);
+	returnStatus &= LoadSpecificShader(".\\src\\shader.frag", ShaderType::FRAGMENT, m_FragmentShader);
 
 	return returnStatus;
 }

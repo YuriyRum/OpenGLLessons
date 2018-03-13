@@ -2,8 +2,8 @@
 #include <string>
 #include "App.h"
 
-#define WIDTH 800
-#define HEIGHT 600
+int WIDTH = 1024;
+int HEIGHT = 768;
 
 int main()
 {	
@@ -34,6 +34,14 @@ int main()
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			}
 		}
+	};
+
+	void(*pWindowResize)(GLFWwindow*, int, int) = [](GLFWwindow* window, int width, int height)
+	{
+		WIDTH = width;
+		HEIGHT = height;
+
+		glViewport(0, 0, WIDTH, HEIGHT);
 	};
 
 	/// interleaved
@@ -198,11 +206,88 @@ int main()
 		return obj;
 	};
 
+	objects(*pCube)() = []() -> objects
+	{
+
+		GLfloat vertices[] = {
+			// position		 // tex coords
+
+			// front face
+			-1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+			1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+			1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
+			-1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
+			1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+
+			// back face
+			-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+			1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+			1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
+			-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
+			1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+
+			// left face
+			-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+			-1.0f,  1.0f,  1.0f, 1.0f, 1.0f,
+			-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
+			-1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+
+			// right face
+			1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+			1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+			1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
+			1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+			1.0f, -1.0f,  1.0f, 0.0f, 0.0f,
+			1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+
+			// top face
+			-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+			1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
+			1.0f,  1.0f, -1.0f, 1.0f, 1.0f,
+			-1.0f,  1.0f, -1.0f, 0.0f, 1.0f,
+			-1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+			1.0f,  1.0f,  1.0f, 1.0f, 0.0f,
+
+			// bottom face
+			-1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
+			1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+			1.0f, -1.0f,  1.0f, 1.0f, 1.0f,
+			-1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, -1.0f, 0.0f, 0.0f,
+			1.0f, -1.0f, -1.0f, 1.0f, 0.0f,
+		};
+
+		GLuint vbo;
+		GLuint vao;
+		
+		glGenBuffers(1, &vbo);
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //GL_DYNAMIC_DRAW
+
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(0));
+		glEnableVertexAttribArray(0);
+
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+		glEnableVertexAttribArray(1);
+		
+
+		objects obj{ vbo, NULL, vao };
+
+		return obj;
+	};
+
 	try 
 	{
 		App::Init();
 		App::CreateWindow(WIDTH, HEIGHT, pAppTitle, pCallback);
-		App::Run(pTexture);
+		App::Run(pCube, WIDTH, HEIGHT);
 		App::Utilize();
 	}	
 	catch (std::string e)

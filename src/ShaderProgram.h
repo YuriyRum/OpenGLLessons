@@ -30,6 +30,7 @@ public:
 	void SetUniform(const GLchar* name, const glm::vec2& vec);
 	void SetUniform(const GLchar* name, const glm::vec3& vec);
 	void SetUniform(const GLchar* name, const glm::vec4& vec);
+	void SetUniform(const GLchar* name, const glm::mat4& mat);
 	void Use();
 
 	GLuint GetProgram() const;

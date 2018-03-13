@@ -4,6 +4,7 @@
 #include <iostream>
 #include "ShaderProgram.h"
 #include "Texture.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 bool App::bFullScreen = false;
 GLFWwindow* App::m_pWindow = nullptr;
@@ -17,9 +18,8 @@ void App::Init()
 	}	
 }
 
-void App::CreateWindow(int width, int height, const char* title, void(*pOnKey)(GLFWwindow*, int, int, int, int))
-{
-
+void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)(GLFWwindow*, int, int, int, int))
+{	
 	/// hints for window creation
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -55,9 +55,10 @@ void App::CreateWindow(int width, int height, const char* title, void(*pOnKey)(G
 		throw std::string("Failed to initialize GLEW");
 	};
 	glClearColor(0.23f, 0.38f, 0.47f, 1.0f);
+	glEnable(GL_DEPTH_TEST);
 }
 
-void App::Run(objects(*run)())
+void App::Run(objects(*run)(), int& width, int& height)
 {
 	ShaderProgram shaderProgram;
 
@@ -69,41 +70,76 @@ void App::Run(objects(*run)())
 	shaderProgram.DeleteShaders();	
 
 	Texture texture;
-	if (!texture.LoadTexture(".\\textures\\airplane.PNG", true))
+	if (!texture.LoadTexture(".\\textures\\wooden_crate.jpg", true))
 	{
 		std::cerr << "Error while reading texture" << std::endl;
 	};
 	
+	/*
 	Texture texture2;
 	if(!texture2.LoadTexture(".\\textures\\crate.jpg", true))
 	{
 		std::cerr << "Error while reading texture" << std::endl;
 	};
-
+	*/
 	objects obj = run();//static buffer draw		
 
+	//cube position
+	glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, -5.0f);
+
+	//cube angle
+	float cubeAngle = 0.0f;
+
+	double lastTime = glfwGetTime();
 
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
 		showFPS(m_pWindow);
+
+		double currentTime = glfwGetTime();
+		double deltaTime = currentTime - lastTime;
+
 		glfwPollEvents();		
-		glClear(GL_COLOR_BUFFER_BIT);		
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
 
 		texture.Bind(0);		
-		texture2.Bind(1);
-		
+		//texture2.Bind(1);
+		cubeAngle += float(deltaTime * 50.0f);
+		if (cubeAngle >= 360.0)
+		{
+			cubeAngle = 0.0f;
+		}
+
+		glm::mat4 model, view, projection;
+
+		model = glm::translate(model, cubePos) * glm::rotate(model, glm::radians(cubeAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+
+		glm::vec3 cameraPos(0.0f, 0.0f, 0.0f);
+		glm::vec3 targetPos(0.0f, 0.0f, -1.0f);
+		glm::vec3 up(0.0f, 1.0f, 0.0f);
+
+		view = glm::lookAt(cameraPos, cameraPos + targetPos, up);		
+
+		projection = glm::perspective(glm::radians(45.0f), float(width/height), 0.1f, 100.0f);
+
 		shaderProgram.Use();	
 
-		glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture"), 0);
-		glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture2"), 1);
+		shaderProgram.SetUniform("model", model);
+		shaderProgram.SetUniform("view", view);
+		shaderProgram.SetUniform("projection", projection);
+
+		//glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture"), 0);
+		//glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture2"), 1);
 		
 
 		glBindVertexArray(obj.vao);
-		//glDrawArrays(GL_TRIANGLES, 0, 6);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(m_pWindow);
+
+		lastTime = currentTime;
 	}
 
 	shaderProgram.DeleteProgram();
