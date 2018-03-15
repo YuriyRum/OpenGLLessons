@@ -5,6 +5,7 @@
 #include "ShaderProgram.h"
 #include "Texture.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "Camera.h"
 
 bool App::bFullScreen = false;
 GLFWwindow* App::m_pWindow = nullptr;
@@ -18,7 +19,7 @@ void App::Init()
 	}	
 }
 
-void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)(GLFWwindow*, int, int, int, int))
+void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)(GLFWwindow*, int, int, int, int), void(*pOnMove)(GLFWwindow*, double, double))
 {	
 	/// hints for window creation
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -46,6 +47,7 @@ void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)
 	}
 
 	glfwSetKeyCallback(m_pWindow, pOnKey);
+	glfwSetCursorPosCallback(m_pWindow, pOnMove);
 	glfwMakeContextCurrent(m_pWindow);
 
 	/// initialize GLEW
@@ -58,7 +60,7 @@ void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)
 	glEnable(GL_DEPTH_TEST);
 }
 
-void App::Run(objects(*run)(), int& width, int& height)
+void App::Run(objects(*run)(), int& width, int& height, float& radius, float& yaw, float& pitch)
 {
 	ShaderProgram shaderProgram;
 
@@ -74,14 +76,12 @@ void App::Run(objects(*run)(), int& width, int& height)
 	{
 		std::cerr << "Error while reading texture" << std::endl;
 	};
-	
-	/*
 	Texture texture2;
-	if(!texture2.LoadTexture(".\\textures\\crate.jpg", true))
+	if (!texture2.LoadTexture(".\\textures\\grid.jpg", true))
 	{
 		std::cerr << "Error while reading texture" << std::endl;
 	};
-	*/
+
 	objects obj = run();//static buffer draw		
 
 	//cube position
@@ -91,6 +91,8 @@ void App::Run(objects(*run)(), int& width, int& height)
 	float cubeAngle = 0.0f;
 
 	double lastTime = glfwGetTime();
+
+	OrbitCamera orbitCamera;
 
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
@@ -103,38 +105,36 @@ void App::Run(objects(*run)(), int& width, int& height)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
 
 		texture.Bind(0);		
-		//texture2.Bind(1);
-		cubeAngle += float(deltaTime * 50.0f);
-		if (cubeAngle >= 360.0)
-		{
-			cubeAngle = 0.0f;
-		}
 
 		glm::mat4 model, view, projection;
 
-		model = glm::translate(model, cubePos) * glm::rotate(model, glm::radians(cubeAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+		orbitCamera.SetLookAt(cubePos);		
+		orbitCamera.SetRadius(radius);
+		orbitCamera.Rotate(yaw, pitch);		
+		model = glm::translate(model, cubePos);
+		
+		view = orbitCamera.GetViewMatrix();
 
-		glm::vec3 cameraPos(0.0f, 0.0f, 0.0f);
-		glm::vec3 targetPos(0.0f, 0.0f, -1.0f);
-		glm::vec3 up(0.0f, 1.0f, 0.0f);
-
-		view = glm::lookAt(cameraPos, cameraPos + targetPos, up);		
-
-		projection = glm::perspective(glm::radians(45.0f), float(width/height), 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(60.0f), float(width/height), 0.1f, 100.0f);
 
 		shaderProgram.Use();	
 
 		shaderProgram.SetUniform("model", model);
 		shaderProgram.SetUniform("view", view);
-		shaderProgram.SetUniform("projection", projection);
-
-		//glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture"), 0);
-		//glUniform1i(glGetUniformLocation(shaderProgram.GetProgram(), "myTexture2"), 1);
-		
+		shaderProgram.SetUniform("projection", projection);			
 
 		glBindVertexArray(obj.vao);
+		glDrawArrays(GL_TRIANGLES, 0, 36);		
+
+		texture2.Bind(0);
+
+		glm::vec3 floorPos;
+		floorPos.y = -1.0f;
+		floorPos.z = 5.0f;
+		model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.0f, 0.01f, 10.0f));
+		shaderProgram.SetUniform("model", model);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
 		glBindVertexArray(0);
 
 		glfwSwapBuffers(m_pWindow);

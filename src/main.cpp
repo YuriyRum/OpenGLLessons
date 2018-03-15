@@ -1,9 +1,18 @@
 #include <iostream>
 #include <string>
 #include "App.h"
+#include "Camera.h"
 
 int WIDTH = 1024;
 int HEIGHT = 768;
+
+float MOUSE_SENSITIVITY = 0.25f;
+
+OrbitCamera orbitCamera;
+
+float yaw = 0.0f;
+float pitch = 0.0f;
+float radius = 10.0f;
 
 int main()
 {	
@@ -42,6 +51,29 @@ int main()
 		HEIGHT = height;
 
 		glViewport(0, 0, WIDTH, HEIGHT);
+	};
+
+	void(*pCursorCallback)(GLFWwindow *, double, double) = [](GLFWwindow * window, double x, double y)
+	{
+		static glm::vec2 lastMousePos = glm::vec2(0, 0);
+
+		/// Update angels based on Left Mouse Button input to orbit	
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == 1)
+		{
+			yaw -= (float(x) - lastMousePos.x) * MOUSE_SENSITIVITY;
+			pitch += (float(y) - lastMousePos.y) * MOUSE_SENSITIVITY;
+		}
+
+		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == 1)
+		{
+			float dx = 0.01f * (float(x) - lastMousePos.x);
+			float dy = 0.01f * (float(y) - lastMousePos.y);
+
+			radius += dx - dy;
+		}
+
+		lastMousePos.x = float(x);
+		lastMousePos.y = float(y);
 	};
 
 	/// interleaved
@@ -277,7 +309,6 @@ int main()
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
 		glEnableVertexAttribArray(1);
 		
-
 		objects obj{ vbo, NULL, vao };
 
 		return obj;
@@ -286,8 +317,8 @@ int main()
 	try 
 	{
 		App::Init();
-		App::CreateWindow(WIDTH, HEIGHT, pAppTitle, pCallback);
-		App::Run(pCube, WIDTH, HEIGHT);
+		App::CreateWindow(WIDTH, HEIGHT, pAppTitle, pCallback, pCursorCallback);
+		App::Run(pCube, WIDTH, HEIGHT, radius, yaw, pitch);
 		App::Utilize();
 	}	
 	catch (std::string e)

@@ -19,8 +19,8 @@ public:
 	static GLFWwindow* m_pWindow;
 public:
 	static void Init();
-	static void CreateWindow(int& width, int& height, const char* title, void(*pOnKey)(GLFWwindow*,int,int,int,int));
-	static void Run(objects(*run)(), int& width, int& height);
+	static void CreateWindow(int& width, int& height, const char* title, void(*pOnKey)(GLFWwindow*,int,int,int,int), void(*pOnMove)(GLFWwindow*, double, double));
+	static void Run(objects(*run)(), int& width, int& height, float& radius, float& yaw, float& pitch);
 	static void Utilize();
 private:
 	static void showFPS(GLFWwindow* window);	
