@@ -3,19 +3,22 @@
 #include "App.h"
 #include "Camera.h"
 
+#include "Math.h"
+
 int WIDTH = 1024;
 int HEIGHT = 768;
 
-float MOUSE_SENSITIVITY = 0.25f;
+//float MOUSE_SENSITIVITY_ = 0.1f;
+//const double ZOOM_SENSIVITY = -3.0f;
+//const float MOVE_SPEED = 5.0f;
 
-OrbitCamera orbitCamera;
 
 float yaw = 0.0f;
 float pitch = 0.0f;
 float radius = 10.0f;
 
 int main()
-{	
+{		
 	const char* pAppTitle = "Test";
 
 	void(*pCallback)(GLFWwindow*, int, int, int, int) = [](GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -30,6 +33,7 @@ int main()
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 
+		/*
 		if (key == GLFW_KEY_W)
 		{
 			bWireFRame = !bWireFRame;
@@ -43,6 +47,7 @@ int main()
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			}
 		}
+		*/
 	};
 
 	void(*pWindowResize)(GLFWwindow*, int, int) = [](GLFWwindow* window, int width, int height)
@@ -55,6 +60,7 @@ int main()
 
 	void(*pCursorCallback)(GLFWwindow *, double, double) = [](GLFWwindow * window, double x, double y)
 	{
+		/*
 		static glm::vec2 lastMousePos = glm::vec2(0, 0);
 
 		/// Update angels based on Left Mouse Button input to orbit	
@@ -74,6 +80,12 @@ int main()
 
 		lastMousePos.x = float(x);
 		lastMousePos.y = float(y);
+		*/
+	};
+
+	void(*pScrollCallback)(GLFWwindow*, double, double) = [](GLFWwindow*, double deltaX, double deltaY) 
+	{
+		
 	};
 
 	/// interleaved
@@ -240,7 +252,6 @@ int main()
 
 	objects(*pCube)() = []() -> objects
 	{
-
 		GLfloat vertices[] = {
 			// position		 // tex coords
 
@@ -317,7 +328,7 @@ int main()
 	try 
 	{
 		App::Init();
-		App::CreateWindow(WIDTH, HEIGHT, pAppTitle, pCallback, pCursorCallback);
+		App::CreateWindow(WIDTH, HEIGHT, pAppTitle, pCallback, pCursorCallback, pScrollCallback);
 		App::Run(pCube, WIDTH, HEIGHT, radius, yaw, pitch);
 		App::Utilize();
 	}	

@@ -7,8 +7,14 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "Camera.h"
 
+const double ZOOM_SENSIVITY = -3.0f;
+const float MOVE_SPEED = 5.0f;
+float MOUSE_SENSITIVITY = 0.1f;
+
 bool App::bFullScreen = false;
 GLFWwindow* App::m_pWindow = nullptr;
+
+FPSCamera fpsCamera(glm::vec3(0.0f, 0.0f, 5.0f));
 
 void App::Init()
 {
@@ -19,7 +25,7 @@ void App::Init()
 	}	
 }
 
-void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)(GLFWwindow*, int, int, int, int), void(*pOnMove)(GLFWwindow*, double, double))
+void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)(GLFWwindow*, int, int, int, int), void(*pOnMove)(GLFWwindow*, double, double), void(*pScroll)(GLFWwindow*, double, double))
 {	
 	/// hints for window creation
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -49,6 +55,20 @@ void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)
 	glfwSetKeyCallback(m_pWindow, pOnKey);
 	glfwSetCursorPosCallback(m_pWindow, pOnMove);
 	glfwMakeContextCurrent(m_pWindow);
+	
+	void(*pScrollCallback)(GLFWwindow*, double, double) = [](GLFWwindow*, double deltaX, double deltaY)
+	{
+		double fov = fpsCamera.GetFOV() + deltaY * ZOOM_SENSIVITY;
+		fov = glm::clamp(fov, 1.0, 120.0);
+		fpsCamera.SetFOV(float(fov));
+	};
+	
+	std::cout << "test" << std::endl;
+
+	glfwSetScrollCallback(m_pWindow, pScrollCallback);
+
+	glfwSetInputMode(m_pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetCursorPos(m_pWindow, width / 2.0, height / 2.0);
 
 	/// initialize GLEW
 	glewExperimental = GL_TRUE;
@@ -86,14 +106,15 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 
 	//cube position
 	glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, -5.0f);
+	glm::vec3 floorPos = glm::vec3(0.0f, -1.0f, 0.0f);
 
 	//cube angle
 	float cubeAngle = 0.0f;
 
 	double lastTime = glfwGetTime();
 
-	OrbitCamera orbitCamera;
-
+	//OrbitCamera orbitCamera;	
+	
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
 		showFPS(m_pWindow);
@@ -102,20 +123,23 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		double deltaTime = currentTime - lastTime;
 
 		glfwPollEvents();		
+		update(deltaTime, width, height);
+
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
 
 		texture.Bind(0);		
 
 		glm::mat4 model, view, projection;
 
-		orbitCamera.SetLookAt(cubePos);		
-		orbitCamera.SetRadius(radius);
-		orbitCamera.Rotate(yaw, pitch);		
+		//orbitCamera.SetLookAt(cubePos);		
+		//orbitCamera.SetRadius(radius);
+		//orbitCamera.Rotate(yaw, pitch);
+
 		model = glm::translate(model, cubePos);
 		
-		view = orbitCamera.GetViewMatrix();
+		view = fpsCamera.GetViewMatrix();
 
-		projection = glm::perspective(glm::radians(60.0f), float(width/height), 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(fpsCamera.GetFOV()), float(width/height), 0.1f, 100.0f);
 
 		shaderProgram.Use();	
 
@@ -182,4 +206,41 @@ void App::showFPS(GLFWwindow* window)
 		framesCount = 0;
 	}
 	framesCount++;
+};
+
+void App::update(float elapsedTime, int& width, int& height)
+{
+	double mouseX, mouseY;
+
+	glfwGetCursorPos(m_pWindow, &mouseX, &mouseY);
+	fpsCamera.Rotate(float(width / 2.0 - mouseX) * MOUSE_SENSITIVITY, float(height / 2.0 - mouseY) * MOUSE_SENSITIVITY );
+	glfwSetCursorPos(m_pWindow, width / 2.0, height / 2.0);
+
+	/// Camera movement
+
+	// Forward/Backward
+	if (glfwGetKey(m_pWindow, GLFW_KEY_W) == GLFW_PRESS)
+	{
+		fpsCamera.Move(MOVE_SPEED * float(elapsedTime) * fpsCamera.GetLook());
+	}
+	else if (glfwGetKey(m_pWindow, GLFW_KEY_S) == GLFW_PRESS)
+	{
+		fpsCamera.Move(MOVE_SPEED * float(elapsedTime) * -fpsCamera.GetLook());
+	}
+	else if (glfwGetKey(m_pWindow, GLFW_KEY_A) == GLFW_PRESS)
+	{
+		fpsCamera.Move(MOVE_SPEED * float(elapsedTime) * -fpsCamera.GetRight());
+	}
+	else if (glfwGetKey(m_pWindow, GLFW_KEY_D) == GLFW_PRESS)
+	{
+		fpsCamera.Move(MOVE_SPEED * float(elapsedTime) * fpsCamera.GetRight());
+	}
+	else if (glfwGetKey(m_pWindow, GLFW_KEY_Z) == GLFW_PRESS)
+	{
+		fpsCamera.Move(MOVE_SPEED * float(elapsedTime) * fpsCamera.GetUp());
+	}
+	else if (glfwGetKey(m_pWindow, GLFW_KEY_X) == GLFW_PRESS)
+	{
+		fpsCamera.Move(MOVE_SPEED * float(elapsedTime) * -fpsCamera.GetUp());
+	}
 };
