@@ -6,6 +6,7 @@
 #include "Texture.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "Camera.h"
+#include "Mesh.h"
 
 const double ZOOM_SENSIVITY = -3.0f;
 const float MOVE_SPEED = 5.0f;
@@ -14,7 +15,7 @@ float MOUSE_SENSITIVITY = 0.1f;
 bool App::bFullScreen = false;
 GLFWwindow* App::m_pWindow = nullptr;
 
-FPSCamera fpsCamera(glm::vec3(0.0f, 0.0f, 5.0f));
+FPSCamera fpsCamera(glm::vec3(0.0f, 3.0f, 10.0f));
 
 void App::Init()
 {
@@ -62,9 +63,7 @@ void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)
 		fov = glm::clamp(fov, 1.0, 120.0);
 		fpsCamera.SetFOV(float(fov));
 	};
-	
-	std::cout << "test" << std::endl;
-
+		
 	glfwSetScrollCallback(m_pWindow, pScrollCallback);
 
 	glfwSetInputMode(m_pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -89,31 +88,40 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		return;
 	};
 
-	shaderProgram.DeleteShaders();	
+	shaderProgram.DeleteShaders();		
 
-	Texture texture;
-	if (!texture.LoadTexture(".\\textures\\wooden_crate.jpg", true))
+	// Model position
+	glm::vec3 modelPos[] = 
 	{
-		std::cerr << "Error while reading texture" << std::endl;
-	};
-	Texture texture2;
-	if (!texture2.LoadTexture(".\\textures\\grid.jpg", true))
-	{
-		std::cerr << "Error while reading texture" << std::endl;
+		glm::vec3(-2.5f, 1.0f, 0.0f), // crate
+		glm::vec3(2.5f, 1.0f, 0.0f), // wood crate
+		glm::vec3(0.0f, 1.0f, -2.0f), // robot
+		glm::vec3(0.0f, 0.0f, 0.0f)  // floor
 	};
 
-	objects obj = run();//static buffer draw		
+	//Model scale
+	glm::vec3 modelScale[] =
+	{
+		glm::vec3(1.0f, 1.0f, 1.0f), // crate
+		glm::vec3(1.0f, 1.0f, 1.0f), // wood crate
+		glm::vec3(1.0f, 1.0f, 1.0f), // robot
+		glm::vec3(10.0f, 0.0f, 10.0f)  // floor
+	};
+	//init meshes
+	Mesh mesh[4];
+	Texture texture[4];
 
-	//cube position
-	glm::vec3 cubePos = glm::vec3(0.0f, 0.0f, -5.0f);
-	glm::vec3 floorPos = glm::vec3(0.0f, -1.0f, 0.0f);
+	mesh[0].LoadObj(".\\models\\crate.obj");
+	mesh[1].LoadObj(".\\models\\woodcrate.obj");
+	mesh[2].LoadObj(".\\models\\robot.obj");
+	mesh[3].LoadObj(".\\models\\floor.obj");
 
-	//cube angle
-	float cubeAngle = 0.0f;
+	texture[0].LoadTexture(".\\textures\\crate.jpg", true);
+	texture[1].LoadTexture(".\\textures\\woodcrate_diffuse.jpg", true);
+	texture[2].LoadTexture(".\\textures\\robot_diffuse.jpg", true);
+	texture[3].LoadTexture(".\\textures\\tile_floor.jpg", true);
 
-	double lastTime = glfwGetTime();
-
-	//OrbitCamera orbitCamera;	
+	double lastTime = glfwGetTime();	
 	
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
@@ -125,54 +133,31 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		glfwPollEvents();		
 		update(deltaTime, width, height);
 
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);				
 
-		texture.Bind(0);		
-
-		glm::mat4 model, view, projection;
-
-		//orbitCamera.SetLookAt(cubePos);		
-		//orbitCamera.SetRadius(radius);
-		//orbitCamera.Rotate(yaw, pitch);
-
-		model = glm::translate(model, cubePos);
+		glm::mat4 model, view, projection;			
 		
 		view = fpsCamera.GetViewMatrix();
 
 		projection = glm::perspective(glm::radians(fpsCamera.GetFOV()), float(width/height), 0.1f, 100.0f);
 
-		shaderProgram.Use();	
-
-		shaderProgram.SetUniform("model", model);
+		shaderProgram.Use();			
 		shaderProgram.SetUniform("view", view);
-		shaderProgram.SetUniform("projection", projection);			
+		shaderProgram.SetUniform("projection", projection);							
 
-		glBindVertexArray(obj.vao);
-		glDrawArrays(GL_TRIANGLES, 0, 36);		
+		for (int i = 0; i < 4; i++)
+		{
+			model = glm::translate(glm::mat4(), modelPos[i]) * glm::scale(glm::mat4(), modelScale[i]);
+			shaderProgram.SetUniform("model", model);
 
-		texture2.Bind(0);
-
-		glm::vec3 floorPos;
-		floorPos.y = -1.0f;
-		floorPos.z = 5.0f;
-		model = glm::translate(model, floorPos) * glm::scale(model, glm::vec3(10.0f, 0.01f, 10.0f));
-		shaderProgram.SetUniform("model", model);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-
-		glBindVertexArray(0);
-
+			texture[i].Bind(0);
+			mesh[i].Draw();
+			texture[i].Unbind(0);
+		}				
 		glfwSwapBuffers(m_pWindow);
-
 		lastTime = currentTime;
 	}
-
-	shaderProgram.DeleteProgram();
-	glDeleteVertexArrays(1, &obj.vao);
-	glDeleteBuffers(1, &obj.vbo);
-	if (&obj.vbo1 != NULL)
-	{
-		glDeleteBuffers(1, &obj.vbo1);
-	}
+	shaderProgram.DeleteProgram();		
 }
 
 void App::Utilize()

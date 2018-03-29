@@ -56,6 +56,12 @@ void Texture::Bind(GLuint unitText)
 	glBindTexture(GL_TEXTURE_2D, m_Texture);
 }
 
+void Texture::Unbind(GLuint unitText)
+{
+	glActiveTexture(GL_TEXTURE0 + unitText);
+	glBindTexture(GL_TEXTURE_2D, 0);
+};
+
 void Texture::InvertImage(unsigned char* source, const int width, const int height)
 {
 	unsigned char* top = nullptr;

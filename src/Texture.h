@@ -10,6 +10,7 @@ public:
 	virtual ~Texture();
 	bool LoadTexture(const std::string& name, bool generateMipMaps);
 	void Bind(GLuint unitText = 0);
+	void Unbind(GLuint unitText = 0);
 private:
 	GLuint m_Texture;
 
