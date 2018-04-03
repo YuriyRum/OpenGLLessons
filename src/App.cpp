@@ -81,47 +81,69 @@ void App::CreateWindow(int& width, int& height, const char* title, void(*pOnKey)
 
 void App::Run(objects(*run)(), int& width, int& height, float& radius, float& yaw, float& pitch)
 {
-	ShaderProgram shaderProgram;
+	
+	ShaderProgram lightShader;
+	if (!lightShader.CreateProgram(".\\src\\light.vert", ".\\src\\light.frag"))
+	{
+		return;
+	}
+	lightShader.DeleteShaders();
+	
+	ShaderProgram lightingShader;
 
-	if (!shaderProgram.CreateProgram())
+	if (!lightingShader.CreateProgram(".\\src\\shader.vert", ".\\src\\shader.frag"))
 	{
 		return;
 	};
+	lightingShader.DeleteShaders();
 
-	shaderProgram.DeleteShaders();		
+	const int numberOfMeshes = 6;
 
-	// Model position
-	glm::vec3 modelPos[] = 
+	// Model positions
+	glm::vec3 modelPos[] =
 	{
-		glm::vec3(-2.5f, 1.0f, 0.0f), // crate
-		glm::vec3(2.5f, 1.0f, 0.0f), // wood crate
-		glm::vec3(0.0f, 1.0f, -2.0f), // robot
-		glm::vec3(0.0f, 0.0f, 0.0f)  // floor
+		glm::vec3(-3.5f, 0.0f, 0.0f), // crate1 1
+		glm::vec3(3.5f, 0.0f, 0.0f), // crate2 2
+		glm::vec3(0.0f, 0.0f, -2.0f), // robot 3
+		glm::vec3(0.0f, 0.0f, 0.0f),  // floor 4
+		glm::vec3(0.0f, 0.0f, 2.0f),  // pin 5
+		glm::vec3(-2.0f, 0.0f, 2.0f),  // bunny 6
 	};
 
-	//Model scale
+	//Model scales
 	glm::vec3 modelScale[] =
 	{
-		glm::vec3(1.0f, 1.0f, 1.0f), // crate
-		glm::vec3(1.0f, 1.0f, 1.0f), // wood crate
-		glm::vec3(1.0f, 1.0f, 1.0f), // robot
-		glm::vec3(10.0f, 0.0f, 10.0f)  // floor
+		glm::vec3(1.0f, 1.0f, 1.0f), // crate 1
+		glm::vec3(1.0f, 1.0f, 1.0f), // wood crate 2
+		glm::vec3(1.0f, 1.0f, 1.0f), // robot 3
+		glm::vec3(10.0f, 1.0f, 10.0f),  // floor 4
+		glm::vec3(0.1f, 0.1f, 0.1f), // pin 5
+		glm::vec3(0.7f, 0.7f, 0.7f), // bunny 6
 	};
+
 	//init meshes
-	Mesh mesh[4];
-	Texture texture[4];
+	Mesh mesh[numberOfMeshes];
+	Texture texture[numberOfMeshes];
 
 	mesh[0].LoadObj(".\\models\\crate.obj");
 	mesh[1].LoadObj(".\\models\\woodcrate.obj");
 	mesh[2].LoadObj(".\\models\\robot.obj");
 	mesh[3].LoadObj(".\\models\\floor.obj");
+	mesh[4].LoadObj(".\\models\\bowling_pin.obj");
+	mesh[5].LoadObj(".\\models\\bunny.obj");
 
 	texture[0].LoadTexture(".\\textures\\crate.jpg", true);
 	texture[1].LoadTexture(".\\textures\\woodcrate_diffuse.jpg", true);
 	texture[2].LoadTexture(".\\textures\\robot_diffuse.jpg", true);
 	texture[3].LoadTexture(".\\textures\\tile_floor.jpg", true);
+	texture[4].LoadTexture(".\\textures\\AMF.tga", true);
+	texture[5].LoadTexture(".\\textures\\bunny_diffuse.jpg", true);
+
+	Mesh lightMesh;
+	lightMesh.LoadObj(".\\models\\light.obj");
 
 	double lastTime = glfwGetTime();	
+	float angle = 0.0f;
 	
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
@@ -140,24 +162,61 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		view = fpsCamera.GetViewMatrix();
 
 		projection = glm::perspective(glm::radians(fpsCamera.GetFOV()), float(width/height), 0.1f, 100.0f);
+		
+		// light
+		glm::vec3 lightPos(0.0f, 1.0f, 10.0f);
+		glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
 
-		shaderProgram.Use();			
-		shaderProgram.SetUniform("view", view);
-		shaderProgram.SetUniform("projection", projection);							
+		// move the light
+		angle += float(deltaTime) * 50.0f;
+		lightPos.x = 8.0f * sinf(glm::radians(angle));
 
-		for (int i = 0; i < 4; i++)
+		glm::vec3 viewPos;
+		viewPos.x = fpsCamera.getPosition().x;
+		viewPos.y = fpsCamera.getPosition().y;
+		viewPos.z = fpsCamera.getPosition().z;
+
+		lightingShader.Use();
+		lightingShader.SetUniform("view", view);
+		lightingShader.SetUniform("projection", projection);
+		lightingShader.SetUniform("viewPos", viewPos);
+
+		lightingShader.SetUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
+		lightingShader.SetUniform("light.diffuse", lightColor);
+		lightingShader.SetUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+		lightingShader.SetUniform("light.position", lightPos);
+		
+		for (int i = 0; i < numberOfMeshes; i++)
 		{
-			model = glm::translate(glm::mat4(), modelPos[i]) * glm::scale(glm::mat4(), modelScale[i]);
-			shaderProgram.SetUniform("model", model);
+			model = glm::translate(glm::mat4(), modelPos[i]) * glm::scale(glm::mat4(), modelScale[i]);			
+			lightingShader.SetUniform("model", model);
+
+			lightingShader.SetUniform("material.ambient", glm::vec3(0.1f, 0.1f, 0.1f));
+			lightingShader.SetUniformSampler("material.diffuseMap", 0);
+			lightingShader.SetUniform("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+			lightingShader.SetUniform("material.shininess", 32.0f);
 
 			texture[i].Bind(0);
 			mesh[i].Draw();
-			texture[i].Unbind(0);
+			texture[i].Unbind(0);			
 		}				
+
+		// render the light
+		model = glm::translate(glm::mat4(), lightPos);
+		
+		lightShader.Use();
+		lightShader.SetUniform("lightColor", lightColor);
+		lightShader.SetUniform("model", model);
+		lightShader.SetUniform("view", view);
+		lightShader.SetUniform("projection", projection);
+		
+		lightMesh.Draw();
+				
 		glfwSwapBuffers(m_pWindow);
 		lastTime = currentTime;
 	}
-	shaderProgram.DeleteProgram();		
+	lightShader.DeleteProgram();		
+	lightingShader.DeleteProgram();
 }
 
 void App::Utilize()

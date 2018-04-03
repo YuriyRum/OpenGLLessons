@@ -3,6 +3,24 @@
 #include <sstream>
 #include <fstream>
 
+std::vector<std::string> split(std::string s, std::string t)
+{
+	std::vector<std::string> res;
+
+	while (1)
+	{
+		int pos = s.find(t);
+		if (pos == -1)
+		{
+			res.push_back(s);
+			break;
+		}
+		res.push_back(s.substr(0, pos));
+		s = s.substr(pos + 1 , s.size() - pos - 1);
+	}
+	return res;
+}
+
 Mesh::Mesh()
 	:mLoaded(false)
 {
@@ -35,69 +53,104 @@ bool Mesh::LoadObj(const std::string& filename)
 
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> textCoords;
-	std::vector<unsigned int> vertexIndeces, textureIndeces;
+	std::vector<glm::vec3> normals;
+	std::vector<unsigned int> vertexIndeces, textureIndeces, normalIndeces;
 	
 
 	std::string lineBuffer;
 	while (std::getline(stream, lineBuffer))
 	{
+		std::stringstream ss(lineBuffer);
+		std::string cmd;
+
+		ss >> cmd;
 		//vertices
-		if (lineBuffer.substr(0, 2) == "v ")
-		{
-			std::istringstream v(lineBuffer.substr(2));
+		if (cmd == "v")
+		{			
 			glm::vec3 vertex;
-			v >> vertex.x;
-			v >> vertex.y;
-			v >> vertex.z;
-			vertices.push_back(vertex);
-		}
-		else if (lineBuffer.substr(0, 2) == "vt")
-		{
-			std::istringstream vt(lineBuffer.substr(3));
-			glm::vec2 tc;
-			vt >> tc.s;
-			vt >> tc.t;
-			textCoords.push_back(tc);
-		}
-		else if (lineBuffer.substr(0, 2) == "f ")
-		{
-			unsigned int p1, p2, p3; //mesh indeces
-			unsigned int t1, t2, t3; //texture indeces
-			unsigned int n1, n2, n3; //normals indeces
-
-			const char* face = lineBuffer.c_str();
-
-			int match = sscanf_s(face, "f %i/%i/%i %i/%i/%i %i/%i/%i",
-				&p1, &t1, &n1,
-				&p2, &t2, &n2,
-				&p3, &t3, &n3);
-			if (match != 9)
+			int dim = 0;
+			while (dim < 3 && ss >> vertex[dim])
 			{
-				std::cerr << "Face format of the" << filename << " is incorrect" << match << std::endl;
-				return false;
+				dim++;
 			}
 
-			vertexIndeces.push_back(p1);
-			vertexIndeces.push_back(p2);
-			vertexIndeces.push_back(p3);
+			vertices.push_back(vertex);
+		}
+		else if (cmd == "vt")
+		{			
+			glm::vec2 uv;
+			int dim = 0;
+			while (dim < 2 && ss >> uv[dim])
+			{
+				dim++;
+			}
+			textCoords.push_back(uv);
+		}
+		else if (cmd == "vn")
+		{
+			glm::vec3 norm;
+			int dim = 0;
+			while (dim < 3 && ss >> norm[dim])
+			{
+				dim++;
+			}
 
-			textureIndeces.push_back(t1);
-			textureIndeces.push_back(t2);
-			textureIndeces.push_back(t3);
+			norm = glm::normalize(norm);
+			normals.push_back(norm);
+		}
+		else if (cmd == "f")
+		{			
+			std::string faceData;
+			int vertexIndex, uvIndex, normalIndex; 
 
+			while (ss >> faceData)
+			{
+				std::vector<std::string> data = split(faceData, "/");
+
+				if (data[0].size() > 0)
+				{
+					sscanf_s(data[0].c_str(), "%d", &vertexIndex);
+					vertexIndeces.push_back(vertexIndex);
+				}
+				if (data.size() >= 1)
+				{
+					if (data[1].size() > 0)
+					{
+						sscanf_s(data[1].c_str(), "%d", &uvIndex);
+						textureIndeces.push_back(uvIndex);
+					}
+					if (data.size() >= 2 && data[2].size() > 0)
+					{
+						sscanf_s(data[2].c_str(), "%d", &normalIndex);
+						normalIndeces.push_back(normalIndex);
+					}
+				}
+			}
 		}
 	}
-	stream.close();
+	stream.close();	
 
 	for (unsigned int i = 0; i < vertexIndeces.size(); i++) 
 	{
 		Vertex meshVertex;
-
-		meshVertex.position = vertices[vertexIndeces[i] - 1];
-		meshVertex.textCoords = textCoords[textureIndeces[i] - 1];
+		
+		if (vertices.size() > 0)
+		{
+			meshVertex.position = vertices[vertexIndeces[i] - 1];
+		}
+		
+		if (normals.size() > 0)
+		{
+			meshVertex.normal = normals[normalIndeces[i] - 1];
+		}
+		
+		if (textCoords.size() > 0)
+		{
+			meshVertex.textCoords = textCoords[textureIndeces[i] - 1];
+		}		
 
 		mVertices.push_back(meshVertex);
-	}
+	}	
 
 	InitBuffers();
 
@@ -113,11 +166,17 @@ void Mesh::InitBuffers()
 	glGenVertexArrays(1, &mVAO);
 	glBindVertexArray(mVAO);
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(0));
+	// Vertex attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(0));
 	glEnableVertexAttribArray(0);
 
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	// Normals attribute
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(3 * sizeof(GLfloat)));
 	glEnableVertexAttribArray(1);
+
+	// Face attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(6 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
 }

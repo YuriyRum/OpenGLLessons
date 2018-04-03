@@ -10,8 +10,8 @@ std::vector<std::string> split(std::string s, std::string t);
 struct Vertex
 {
 	glm::vec3 position;
-	glm::vec2 textCoords;
-	//glm::vec3 normal;
+	glm::vec3 normal;
+	glm::vec2 textCoords;	
 };
 
 class Mesh

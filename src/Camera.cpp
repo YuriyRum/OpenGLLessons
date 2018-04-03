@@ -34,6 +34,11 @@ glm::mat4 Camera::GetViewMatrix() const
 	return glm::lookAt(mPosition, mTargetPos, mUp);
 }
 
+const glm::vec3& Camera::getPosition() const 
+{
+	return mPosition;
+}
+
 /// FPSCamera
 
 FPSCamera::FPSCamera(glm::vec3 position, float yaw, float pitch)

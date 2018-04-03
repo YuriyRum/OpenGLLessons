@@ -3,7 +3,8 @@
 #include "iostream"
 #include "glm/gtc/type_ptr.hpp"
 
-ShaderProgram::ShaderProgram() : m_VertexShader(glCreateShader(GL_VERTEX_SHADER)), m_FragmentShader(glCreateShader(GL_FRAGMENT_SHADER)), m_Program(glCreateProgram())
+ShaderProgram::ShaderProgram() 
+	: m_VertexShader(glCreateShader(GL_VERTEX_SHADER)), m_FragmentShader(glCreateShader(GL_FRAGMENT_SHADER)), m_Program(glCreateProgram())
 {
 }
 
@@ -14,9 +15,9 @@ ShaderProgram::~ShaderProgram()
 	DeleteProgram();
 }
 
-bool ShaderProgram::CreateProgram()
+bool ShaderProgram::CreateProgram(std::string vert, std::string frag)
 {
-	if (!LoadShaders())
+	if (!LoadShaders(vert, frag))
 	{
 		std::cerr << "Error occured during shaders compilation" << std::endl;
 		return false;
@@ -99,10 +100,23 @@ void ShaderProgram::SetUniform(const GLchar* name, const glm::vec4& vec)
 	glUniform4f(uniformLocation, vec.x, vec.y, vec.z, vec.w);
 };
 
-void ShaderProgram::SetUniform(const GLchar* name, const glm::mat4& mat)
+void ShaderProgram::SetUniform(const GLchar* name, const GLfloat& val)
 {
 	GLint uniformLocation = GetUniformLocation(name);
+	glUniform1f(uniformLocation, val);
+};
+
+void ShaderProgram::SetUniform(const GLchar* name, const glm::mat4& mat)
+{	
+	GLint uniformLocation = GetUniformLocation(name);	
 	glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glm::value_ptr(mat));
+};
+
+void ShaderProgram::SetUniformSampler(const GLchar* name, const GLint& slot)
+{
+	glActiveTexture(GL_TEXTURE0 + slot);
+	GLint uniformLocation = GetUniformLocation(name);
+	glUniform1i(uniformLocation, slot);
 };
 
 void ShaderProgram::Use()
@@ -110,11 +124,11 @@ void ShaderProgram::Use()
 	glUseProgram(m_Program);
 }
 
-bool ShaderProgram::LoadShaders()
+bool ShaderProgram::LoadShaders(std::string vert, std::string frag)
 {
 	bool returnStatus = true;
-	returnStatus &= LoadSpecificShader(".\\src\\shader.vert", ShaderType::VERTEX, m_VertexShader);
-	returnStatus &= LoadSpecificShader(".\\src\\shader.frag", ShaderType::FRAGMENT, m_FragmentShader);
+	returnStatus &= LoadSpecificShader(vert, ShaderType::VERTEX, m_VertexShader);
+	returnStatus &= LoadSpecificShader(frag, ShaderType::FRAGMENT, m_FragmentShader);
 
 	return returnStatus;
 }

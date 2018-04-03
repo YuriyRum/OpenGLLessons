@@ -23,21 +23,23 @@ public:
 	ShaderProgram();
 	~ShaderProgram();
 
-	bool CreateProgram();
+	bool CreateProgram(std::string vert, std::string frag);
 	void DeleteShaders();
 	void DeleteProgram();
 
 	void SetUniform(const GLchar* name, const glm::vec2& vec);
 	void SetUniform(const GLchar* name, const glm::vec3& vec);
 	void SetUniform(const GLchar* name, const glm::vec4& vec);
+	void SetUniform(const GLchar* name, const GLfloat& val);
 	void SetUniform(const GLchar* name, const glm::mat4& mat);
+	void SetUniformSampler(const GLchar* name, const GLint& slot);
 	void Use();
 
 	GLuint GetProgram() const;
 	GLint GetUniformLocation(const GLchar* name);
 	
 private:
-	bool LoadShaders();
+	bool LoadShaders(std::string vert, std::string frag);
 	bool LoadSpecificShader(const std::string, ShaderType, GLuint);
 
 	std::map<std::string, GLint> m_UniformLocations;
