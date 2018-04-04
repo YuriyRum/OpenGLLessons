@@ -83,7 +83,7 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 {
 	
 	ShaderProgram lightShader;
-	if (!lightShader.CreateProgram(".\\src\\light.vert", ".\\src\\light.frag"))
+	if (!lightShader.CreateProgram(".\\src\\directLight.vert", ".\\src\\directLight.frag"))
 	{
 		return;
 	}
@@ -166,6 +166,7 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		// light
 		glm::vec3 lightPos(0.0f, 1.0f, 10.0f);
 		glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
+		glm::vec3 lightDirection(0.0f, -0.9f, -0.17f);
 
 		// move the light
 		angle += float(deltaTime) * 50.0f;
@@ -184,7 +185,7 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		lightingShader.SetUniform("light.ambient", glm::vec3(0.2f, 0.2f, 0.2f));
 		lightingShader.SetUniform("light.diffuse", lightColor);
 		lightingShader.SetUniform("light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
-		lightingShader.SetUniform("light.position", lightPos);
+		lightingShader.SetUniform("light.direction", lightDirection);
 		
 		for (int i = 0; i < numberOfMeshes; i++)
 		{
@@ -202,6 +203,7 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		}				
 
 		// render the light
+		/*
 		model = glm::translate(glm::mat4(), lightPos);
 		
 		lightShader.Use();
@@ -211,7 +213,8 @@ void App::Run(objects(*run)(), int& width, int& height, float& radius, float& ya
 		lightShader.SetUniform("projection", projection);
 		
 		lightMesh.Draw();
-				
+		*/
+
 		glfwSwapBuffers(m_pWindow);
 		lastTime = currentTime;
 	}
